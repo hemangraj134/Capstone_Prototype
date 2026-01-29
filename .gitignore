@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+huggingface_cache/
+*.csv
+*.json
+*.bin
+*.safetensors

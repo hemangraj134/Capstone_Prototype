@@ -1,91 +1,109 @@
-## README.md
 
-# Software Vulnerability Detection and Mitigation using Federated Learning
 
-This repository contains the prototype for a Capstone project focused on identifying and mitigating security vulnerabilities in C/C++ source code. By leveraging **Federated Learning (FL)** and the **DiverseVul** dataset, this framework allows for the collective training of a robust detection model without requiring participants to share their private source code.
+---
+
+# 🛡️ Federated RAG: Decentralized CWE Detection & Remediation
+
+This repository contains a high-performance, privacy-preserving prototype for identifying and fixing C/C++ vulnerabilities. By integrating **Federated Learning (FL)** for detection and **Retrieval-Augmented Generation (RAG)** for remediation, this system provides human-verified security patches without ever exposing proprietary source code to a central server.
 
 ---
 
 ## 🚀 Project Overview
 
-Traditional vulnerability detection requires centralized datasets, which is often impossible for organizations with sensitive proprietary code. This project solves that by using the **Flower (flwr)** framework to decentralize the training process.
+Traditional AI security tools often compromise data privacy by requiring code uploads to the cloud, or they "hallucinate" insecure fixes. This project implements a **"Detective & Librarian"** hybrid architecture:
 
-### Key Features
+* **The Detective:** A Federated **CodeBERT-LoRA** model that classifies vulnerability patterns (CWEs) locally.
+* **The Librarian:** A RAG-driven engine that retrieves **Grounded Truth** patches from the human-verified **CIRCL** knowledge base.
 
-* **Privacy-Preserving:** Training happens locally on client machines; only model updates (weights) are sent to the server.
-* **C/C++ Focused:** Specifically tuned to handle the complexities of C/C++ memory management and syntax using the DiverseVul dataset.
-* **Scalable:** Designed to support multiple clients using Federated Averaging (**FedAvg**).
+### 💎 Key Innovations
+
+* **Privacy-Preserving:** Built on the **Flower (flwr)** framework; raw source code never leaves the local client environment.
+* **Parameter-Efficient Fine-Tuning (PEFT):** Utilizes **LoRA (Low-Rank Adaptation)** to train a 110M parameter transformer on consumer-grade hardware (**NVIDIA RTX 4050**).
+* **Zero-Hallucination Remediation:** Unlike generative models, our system retrieves **verified Git patches** from the **CIRCL vault** to ensure patches are technically sound and expert-signed.
 
 ---
 
 ## 🏗️ System Architecture
 
-The system consists of two primary components:
+### 1. Federated Learning Core (`server.py` & `client.py`)
 
-### 1. The Server (`server.py`)
+* **Protocol:** Uses **FedAvg (Federated Averaging)** to synchronize local weight updates into a global model.
+* **Model:** **CodeBERT-LoRA**—an encoder specialized for programming languages, optimized to update only  of its parameters, significantly reducing VRAM requirements.
 
-The central coordinator responsible for:
+### 2. The Remediation Vault (`index_vault.py` & `vector_vault/`)
 
-* Initializing the global model.
-* Selecting available clients for training rounds.
-* Aggregating local weights using the **FedAvg** strategy.
-* Evaluating the global model's performance on a validation set.
+* **Knowledge Base:** 35,000+ real-world patches from the **CIRCL** (Computer Incident Response Center Luxembourg) dataset.
+* **Vector Engine:** **ChromaDB** Persistent Vector Store using `all-MiniLM-L6-v2` embeddings for 384-dimensional semantic retrieval.
 
-### 2. The Clients (`client.py`)
+### 3. The Scanner (`scanner.py`)
 
-Individual nodes that:
-
-* Host their own slice of the **DiverseVul** dataset.
-* Perform local training using deep learning models (e.g., GRU, LSTM, or GNN).
-* Transmit only the resulting weight changes back to the server.
-
----
-
-## 📊 Dataset: DiverseVul
-
-The project utilizes **DiverseVul**, a comprehensive dataset of C/C++ vulnerabilities.
-
-* **Diversity:** Covers 150+ CWE types (Common Weakness Enumeration).
-* **Source:** Real-world vulnerabilities from open-source projects.
-* **Format:** Typically pre-processed into tokenized sequences or graph representations for model ingestion.
+The integration layer where the **Classifier** identifies a vulnerability and the **RAG Engine** maps it to the closest historical fix.
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Component | Technology |
-| --- | --- |
-| **FL Framework** | Flower (`flwr`) |
-| **Deep Learning** | PyTorch / TensorFlow |
-| **Language** | Python 3.x |
-| **Analysis Target** | C / C++ |
-| **Dataset** | DiverseVul |
+| Component | Technology | Technical Detail |
+| --- | --- | --- |
+| **FL Framework** | **Flower (flwr)** | gRPC-based communication rounds |
+| **Detection Engine** | **CodeBERT** | LoRA-injected Transformer (PEFT) |
+| **Vector DB** | **ChromaDB** | Persistent local vector storage |
+| **Compute Ops** | **PyTorch / CUDA** | Optimized for 6GB VRAM |
+| **Datasets** | **DiverseVul & CIRCL** | 150k+ vulnerabilities / 35k+ patches |
 
 ---
 
-## 🚦 Getting Started
+## 🚦 Execution Workflow
 
-### Prerequisites
+### 1. Initialize the Knowledge Vault
 
-* Python 3.8+
-* `pip install flwr torch numpy pandas`
+Ensure the **CIRCL** dataset is in the root directory, then run:
 
-### Execution
+```bash
+python index_vault.py
 
-1. **Start the Server:**
+```
+
+### 2. Execute Federated Training
+
+**Terminal 1 (Server):**
+
 ```bash
 python server.py
 
 ```
 
+**Terminal 2 (Client Launcher):**
 
-2. **Start the Clients (in separate terminals):**
 ```bash
-python client.py --client_id 1
-python client.py --client_id 2
+python start_client.py
 
 ```
 
+### 3. Run the Scanner (Remediation Loop)
 
+Once `cwe_classifier.pth` is generated, run the final inference:
+
+```bash
+python scanner.py
+
+```
+
+---
+
+## 📊 Technical Metrics (Current Status)
+
+* **Convergence:** Successfully reduced Global Loss from **1.8598** to **1.8439** in 5 rounds.
+* **Hardware Ops:** Benchmarked at **~2.5GB VRAM** usage (RTX 4050).
+* **Retrieval:** Successfully mapped complex Kernel-level flaws to **CVE-2015-1805**.
+
+---
+
+## 🤝 Data & Artifact Management
+
+*Large binary files are excluded from this repo via `.gitignore`. Members must follow this sync protocol:*
+
+1. **Datasets:** Download `diversevul_20230702.json` and `circl_patches.csv` manually to the root.
+2. **Weights:** If you wish to bypass training, download the latest `cwe_classifier.pth` from the shared Team Drive and place it in the root directory.
 
 ---

@@ -1,7 +1,19 @@
+# Environments
 .venv/
 __pycache__/
-huggingface_cache/
-*.csv
-*.json
-*.bin
+
+# Large Models & Weights
+*.pth
 *.safetensors
+*.bin
+huggingface_cache/
+
+# Data & Datasets
+*.json
+*.csv
+clients/
+vector_vault/
+
+# OS/IDEs
+.vscode/
+.DS_Store
